@@ -9,6 +9,8 @@ with open(token_filename) as f:
     API_TOKEN = f.readline()
 bot = telebot.TeleBot(API_TOKEN)
 
+history = []
+
 # Команды
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -17,6 +19,7 @@ def send_welcome(message):
         "Доступные команды:\n"
         "/start - вывод всех доступных команд\n"
         "/model - выводит название используемой языковой модели\n"
+        "/clear - очищает контекст\n"
         "Отправьте любое сообщение, и я отвечу с помощью LLM модели."
     )
     bot.reply_to(message, welcome_text)
@@ -35,16 +38,24 @@ def send_model_name(message):
         bot.reply_to(message, 'Не удалось получить информацию о модели.')
 
 
+@bot.message_handler(commands=['clear'])
+def clear_context(message):
+    # Очищаем историю
+    history.clear()
+    bot.reply_to(message, 'Контекст очищен.')
+
+
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
     user_query = message.text
+    history.append(
+        {
+            "role": "user",
+            "content": message.text
+        }
+    )
     request = {
-        "messages": [
-            {
-                "role": "user",
-                "content": message.text
-            },
-        ]
+        "messages": history
     }
     response = requests.post(
         'http://localhost:1234/v1/chat/completions',
@@ -54,6 +65,12 @@ def handle_message(message):
     if response.status_code == 200:
         model_response :ModelResponse = jsons.loads(response.text, ModelResponse)
         bot.reply_to(message, model_response.choices[0].message.content)
+        history.append(
+            {
+                "role": "assistant",
+                "content": model_response.choices[0].message.content
+            }
+        )
     else:
         bot.reply_to(message, 'Произошла ошибка при обращении к модели.')
 

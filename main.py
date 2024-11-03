@@ -12,16 +12,23 @@ with open(token_filename) as f:
 bot = telebot.TeleBot(API_TOKEN)
 chat_history_folder = 'chat_history'
 
+
+def set_commands():
+    c1 = telebot.types.BotCommand(command='start', description='Вывод всех доступных команд')
+    c2 = telebot.types.BotCommand(command='model', description='Вывод названия используемой языковой модели')
+    c3 = telebot.types.BotCommand(command='clear', description='Очистка контекста')
+    bot.set_my_commands([c1, c2, c3])
+
+
 # Команды
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     welcome_text = (
-        "Привет! Я ваш Telegram бот.\n"
-        "Доступные команды:\n"
+        "Эм... Привет, я Скибиду. Кажется, я понимаю такие команды:\n"
         "/start - вывод всех доступных команд\n"
-        "/model - выводит название используемой языковой модели\n"
-        "/clear - очищает контекст\n"
-        "Отправьте любое сообщение, и я отвечу с помощью LLM модели."
+        "/model - вывод названия используемой языковой модели\n"
+        "/clear - очистка контекста\n"
+        "Отправь мне сообщение, и, возможно, я на него отвечу..."
     )
     bot.reply_to(message, welcome_text)
 
@@ -99,4 +106,5 @@ if __name__ == '__main__':
         os.mkdir(chat_history_folder)
     #for f in os.listdir(chat_history_folder):
     #    os.remove(os.path.join(chat_history_folder, f))
+    set_commands()
     bot.polling(none_stop=True)
